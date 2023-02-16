@@ -16,6 +16,7 @@ describe('DetailComment entities', () => {
       username: 123,
       date: [],
       content: {},
+      like_count: {},
       is_delete: '123',
     };
 
@@ -31,6 +32,7 @@ describe('DetailComment entities', () => {
       username: 'dicoding',
       date,
       content: 'sebuah komentar',
+      like_count: 0,
       is_delete: false,
     };
 
@@ -43,6 +45,7 @@ describe('DetailComment entities', () => {
     expect(detailComment.username).toEqual('dicoding');
     expect(detailComment.date).toEqual(date);
     expect(detailComment.content).toEqual('sebuah komentar');
+    expect(detailComment.likeCount).toEqual(0);
   });
 
   it('should create a deleted DetailComment entities correctly', () => {
@@ -53,6 +56,7 @@ describe('DetailComment entities', () => {
       username: 'dicoding',
       date,
       content: 'sebuah komentar',
+      like_count: 0,
       is_delete: true,
     };
 
@@ -65,5 +69,6 @@ describe('DetailComment entities', () => {
     expect(detailComment.username).toEqual('dicoding');
     expect(detailComment.date).toEqual(date);
     expect(detailComment.content).toEqual('**komentar telah dihapus**');
+    expect(detailComment.likeCount).toEqual(0);
   });
 });

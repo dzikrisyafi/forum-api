@@ -1,10 +1,12 @@
 const CommentsTableTestHelper = require('../../../../tests/CommentsTableTestHelper');
 const ThreadsTableTestHelper = require('../../../../tests/ThreadsTableTestHelper');
 const UsersTableTestHelper = require('../../../../tests/UsersTableTestHelper');
+const UserCommentLikesTestHelper = require('../../../../tests/UserCommentLikesTableTestHelper');
 const NotFoundError = require('../../../Commons/exceptions/NotFoundError');
 const AuthorizationError = require('../../../Commons/exceptions/AuthorizationError');
 const AddedComment = require('../../../Domains/comments/entities/AddedComment');
 const NewComment = require('../../../Domains/comments/entities/NewComment');
+const NewUserCommentLike = require('../../../Domains/comments/entities/NewUserCommentLike');
 const pool = require('../../database/postgres/pool');
 const CommentRepositoryPostgres = require('../CommentRepositoryPostgres');
 const DetailComment = require('../../../Domains/comments/entities/DetailComment');
@@ -17,6 +19,7 @@ describe('CommentRepositoryPostgres', () => {
   });
 
   afterEach(async () => {
+    await UserCommentLikesTestHelper.cleanTable();
     await CommentsTableTestHelper.cleanTable();
     await ThreadsTableTestHelper.cleanTable();
     await UsersTableTestHelper.cleanTable();
@@ -67,6 +70,25 @@ describe('CommentRepositoryPostgres', () => {
     });
   });
 
+  describe('addUserCommentLike function', () => {
+    it('should persist new user comment like and return added user comment like correctly', async () => {
+      // Arrange
+      const newUserCommentLike = new NewUserCommentLike({
+        userId: 'user-123',
+        commentId: 'comment-123',
+      });
+      const fakeidGenerator = () => '123';
+      const commentRepositoryPostgres = new CommentRepositoryPostgres(pool, fakeidGenerator);
+
+      // Action
+      await commentRepositoryPostgres.addUserCommentLike(newUserCommentLike);
+
+      // Assert
+      const likes = await UserCommentLikesTestHelper.findUserCommentLikesById('like-123');
+      expect(likes).toHaveLength(1);
+    });
+  });
+
   describe('getCommentsByThreadId function', () => {
     it('should throw comments by thread id correctly', async () => {
       // Arrange;
@@ -82,8 +104,51 @@ describe('CommentRepositoryPostgres', () => {
           username: 'dicoding',
           date: new Date('2021-01-01').toISOString(),
           content: 'isi comment',
+          like_count: 0,
           is_delete: false,
         })]);
+    });
+  });
+
+  describe('deleteComment function', () => {
+    it('should soft delete comment correctly', async () => {
+      // Arrange
+      const commentRepositoryPostgres = new CommentRepositoryPostgres(pool, {});
+      const commentId = 'comment-123';
+
+      // Action
+      await commentRepositoryPostgres.deleteComment(commentId);
+
+      // Assert
+      const comments = await CommentsTableTestHelper.findCommentsById(commentId);
+      expect(comments).toHaveLength(1);
+      expect(comments[0].is_delete).toEqual(true);
+    });
+  });
+
+  describe('deleteUserCommentLike function', () => {
+    it('should throw NotFoundError when user comment like not available', async () => {
+      // Arrange
+      const commentRepositoryPostgres = new CommentRepositoryPostgres(pool, {});
+
+      await expect(commentRepositoryPostgres.deleteUserCommentLike('xx', 'xx')).rejects.toThrowError(NotFoundError);
+    });
+
+    it('should delete user comment like correctly', async () => {
+      // Arrange
+      const commentRepositoryPostgres = new CommentRepositoryPostgres(pool, {});
+      await UserCommentLikesTestHelper.addUserCommentLike({
+        id: 'like-123',
+        userId: 'user-123',
+        commentId: 'comment-123',
+      });
+
+      // Action
+      await commentRepositoryPostgres.deleteUserCommentLike('user-123', 'comment-123');
+
+      // Assert
+      const likes = await UserCommentLikesTestHelper.findUserCommentLikesById('like-123');
+      expect(likes).toHaveLength(0);
     });
   });
 
@@ -139,19 +204,28 @@ describe('CommentRepositoryPostgres', () => {
     });
   });
 
-  describe('deleteComment function', () => {
-    it('should soft delete comment correctly', async () => {
+  describe('verifyUserCommentLike function', () => {
+    it('should throw true when user comment like available', async () => {
       // Arrange
       const commentRepositoryPostgres = new CommentRepositoryPostgres(pool, {});
-      const commentId = 'comment-123';
+      await UserCommentLikesTestHelper.addUserCommentLike({ userId: 'user-123', commentId: 'comment-123' });
 
       // Action
-      await commentRepositoryPostgres.deleteComment(commentId);
+      const like = await commentRepositoryPostgres.verifyUserCommentLike('user-123', 'comment-123');
 
       // Assert
-      const comments = await CommentsTableTestHelper.findCommentsById(commentId);
-      expect(comments).toHaveLength(1);
-      expect(comments[0].is_delete).toEqual(true);
+      expect(like).toBeTruthy();
+    });
+
+    it('should throw false when user comment like not available', async () => {
+      // Arrange
+      const commentRepositoryPostgres = new CommentRepositoryPostgres(pool, {});
+
+      // Action
+      const like = await commentRepositoryPostgres.verifyUserCommentLike('user-123', 'comment-123');
+
+      // Assert
+      expect(like).toBeFalsy();
     });
   });
 });
