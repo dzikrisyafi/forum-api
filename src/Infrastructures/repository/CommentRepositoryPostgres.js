@@ -26,6 +26,18 @@ class CommentRepositoryPostgres extends CommentRepository {
     return new AddedComment(result.rows[0]);
   }
 
+  async addUserCommentLike(newUserCommentLike) {
+    const { userId, commentId } = newUserCommentLike;
+    const id = `like-${this._idGenerator()}`;
+
+    const query = {
+      text: 'INSERT INTO user_comment_likes VALUES($1, $2, $3) RETURNING id',
+      values: [id, userId, commentId],
+    };
+
+    await this._pool.query(query);
+  }
+
   async getCommentsByThreadId(threadId) {
     const query = {
       text: `SELECT 
@@ -33,6 +45,7 @@ class CommentRepositoryPostgres extends CommentRepository {
       username, 
       date, 
       content,
+      (select count(id)::int from user_comment_likes where comment_id = c.id) as like_count,
       is_delete 
       FROM comments c
       INNER JOIN users u ON u.id = c.owner
@@ -53,6 +66,18 @@ class CommentRepositoryPostgres extends CommentRepository {
     };
 
     await this._pool.query(query);
+  }
+
+  async deleteUserCommentLike(userId, commentId) {
+    const query = {
+      text: 'DELETE FROM user_comment_likes WHERE user_id = $1 AND comment_id = $2 RETURNING id',
+      values: [userId, commentId],
+    };
+
+    const result = await this._pool.query(query);
+    if (!result.rowCount) {
+      throw new NotFoundError('Like gagal dihapus. Id tidak ditemukan');
+    }
   }
 
   async verifyComment(id) {
@@ -82,6 +107,16 @@ class CommentRepositoryPostgres extends CommentRepository {
     if (comment.owner !== owner) {
       throw new AuthorizationError('Anda tidak berhak mengakses resource ini');
     }
+  }
+
+  async verifyUserCommentLike(userId, commentId) {
+    const query = {
+      text: 'SELECT id FROM user_comment_likes WHERE user_id = $1 AND comment_id = $2',
+      values: [userId, commentId],
+    };
+
+    const result = await this._pool.query(query);
+    return !!result.rowCount;
   }
 }
 

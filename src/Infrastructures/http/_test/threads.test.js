@@ -553,4 +553,66 @@ describe('/threads endpoint', () => {
       expect(responseJson.message).toEqual('Anda tidak berhak mengakses resource ini');
     });
   });
+
+  describe('when POST /threads/{threadId}/comments/{commentId}/likes', () => {
+    it('should response 200 and status success', async () => {
+      // Arrange
+      const accessToken = await ServerTestHelper.getAccessToken();
+      const server = await createServer(container);
+
+      // Action
+      const response = await server.inject({
+        method: 'PUT',
+        url: '/threads/thread-123/comments/comment-123/likes',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+
+      // Assert
+      const responseJson = JSON.parse(response.payload);
+      expect(response.statusCode).toEqual(200);
+      expect(responseJson.status).toEqual('success');
+    });
+
+    it('should response 404 when thread not available', async () => {
+      // Arrange
+      const accessToken = await ServerTestHelper.getAccessToken();
+      const server = await createServer(container);
+
+      // Action
+      const response = await server.inject({
+        method: 'PUT',
+        url: '/threads/xx/comments/comment-123/likes',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+
+      // Assert
+      const responseJson = JSON.parse(response.payload);
+      expect(response.statusCode).toEqual(404);
+      expect(responseJson.status).toEqual('fail');
+    });
+
+    it('should response 404 when comment not available', async () => {
+      // Arrange
+      const accessToken = await ServerTestHelper.getAccessToken();
+      const server = await createServer(container);
+
+      // Action
+      const response = await server.inject({
+        method: 'PUT',
+        url: '/threads/thread-123/comments/xx/likes',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+
+      // Assert
+      const responseJson = JSON.parse(response.payload);
+      expect(response.statusCode).toEqual(404);
+      expect(responseJson.status).toEqual('fail');
+    });
+  });
 });

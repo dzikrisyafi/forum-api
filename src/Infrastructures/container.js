@@ -28,6 +28,7 @@ const JwtTokenManager = require('./security/JwtTokenManager');
 const AddUserUseCase = require('../Applications/use_case/AddUserUseCase');
 const AddThreadUseCase = require('../Applications/use_case/AddThreadUseCase');
 const AddCommentUseCase = require('../Applications/use_case/AddCommentUseCase');
+const AddUserCommentLikeUseCase = require('../Applications/use_case/AddUserCommentLikeUseCase');
 const AddReplyUseCase = require('../Applications/use_case/AddReplyUseCase');
 const DeleteCommentUseCase = require('../Applications/use_case/DeleteCommentUseCase');
 const DeleteReplyUseCase = require('../Applications/use_case/DeleteReplyUseCase');
@@ -188,6 +189,23 @@ container.register([
   {
     key: AddCommentUseCase.name,
     Class: AddCommentUseCase,
+    parameter: {
+      injectType: 'destructuring',
+      dependencies: [
+        {
+          name: 'threadRepository',
+          internal: ThreadRepository.name,
+        },
+        {
+          name: 'commentRepository',
+          internal: CommentRepository.name,
+        },
+      ],
+    },
+  },
+  {
+    key: AddUserCommentLikeUseCase.name,
+    Class: AddUserCommentLikeUseCase,
     parameter: {
       injectType: 'destructuring',
       dependencies: [

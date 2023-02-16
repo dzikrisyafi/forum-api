@@ -1,6 +1,7 @@
 const AddCommentUseCase = require('../../../../Applications/use_case/AddCommentUseCase');
 const AddReplyUseCase = require('../../../../Applications/use_case/AddReplyUseCase');
 const AddThreadUseCase = require('../../../../Applications/use_case/AddThreadUseCase');
+const AddUserCommentLike = require('../../../../Applications/use_case/AddUserCommentLikeUseCase');
 const DeleteCommentUseCase = require('../../../../Applications/use_case/DeleteCommentUseCase');
 const DeleteReplyUseCase = require('../../../../Applications/use_case/DeleteReplyUseCase');
 const GetDetailThreadUseCase = require('../../../../Applications/use_case/GetDetailThreadUseCase');
@@ -15,6 +16,7 @@ class ThreadsHandler {
     this.deleteThreadCommentHandler = this.deleteThreadCommentHandler.bind(this);
     this.postReplyThreadCommentHandler = this.postReplyThreadCommentHandler.bind(this);
     this.deleteReplyThreadCommentHandler = this.deleteReplyThreadCommentHandler.bind(this);
+    this.putThreadCommentLikeHandler = this.putThreadCommentLikeHandler.bind(this);
   }
 
   async postThreadHandler(request, h) {
@@ -98,6 +100,18 @@ class ThreadsHandler {
     const deleteReplyUseCase = this._container.getInstance(DeleteReplyUseCase.name);
     await deleteReplyUseCase.execute({
       threadId, commentId, replyId, owner: credentialId,
+    });
+    return {
+      status: 'success',
+    };
+  }
+
+  async putThreadCommentLikeHandler(request) {
+    const { threadId, commentId } = request.params;
+    const { id: credentialId } = request.auth.credentials;
+    const addUserCommentLike = this._container.getInstance(AddUserCommentLike.name);
+    await addUserCommentLike.execute({
+      userId: credentialId, threadId, commentId,
     });
     return {
       status: 'success',
